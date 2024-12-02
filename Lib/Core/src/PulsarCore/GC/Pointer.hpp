@@ -23,7 +23,7 @@ namespace Pulsar::GC {
         }
 
         // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
-        Scoped(nullptr_t = nullptr, Allocator allocator = Allocator())
+        Scoped(std::nullptr_t = nullptr, Allocator allocator = Allocator())
             : m_Ptr(nullptr), m_Allocator(allocator) {
         }
 
@@ -109,7 +109,7 @@ namespace Pulsar::GC {
         }
 
         // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
-        Ref(nullptr_t = nullptr, Allocator allocator = Allocator())
+        Ref(std::nullptr_t = nullptr, Allocator allocator = Allocator())
             : m_Ptr(nullptr), m_RefCount(nullptr), m_Allocator(allocator) {
         }
 
