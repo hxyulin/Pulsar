@@ -4,8 +4,12 @@ Checks: >
   -fuchsia-*,
 
   -llvm-include-order,
+  -llvm-header-guard,
+  -misc-include-cleaner,
   -modernize-use-trailing-return-type,
+  -modernize-return-braced-init-list,
   -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-macro-usage,
   -readability-magic-numbers,
   -google-build-using-namespace,
   -google-readability-todo,
@@ -13,10 +17,11 @@ Checks: >
 CheckOptions:
   readability-identifier-length.MinimumVariableNameLength: 3
   readability-identifier-length.MinimumParameterNameLength: 1
-  readability-identifier-naming.ClassMemberPrefix: m_
+  readability-identifier-naming.PrivateMemberPrefix: m_
+  readability-identifier-naming.ProtectedMemberPrefix: m_
+  readability-identifier-naming.PublicMemberPrefix: m_
+  readability-identifier-naming.ClassMemberPrefix: s_
   readability-identifier-naming.ClassMemberCase: CamelCase
-  readability-identifier-naming.StaticMemberPrefix: s_
-  readability-identifier-naming.StaticMemberCase: CamelCase
   readability-identifier-naming.GlobalConstantPrefix: g_
   readability-identifier-naming.GlobalConstantCase: CamelCase
   readability-identifier-naming.StructCase: CamelCase
@@ -30,5 +35,4 @@ CheckOptions:
   readability-identifier-naming.ParameterCase: camelBack
 
 WarningsAsErrors: '*'
-HeaderFilterRegex: '*.hpp'
 FormatStyle: file

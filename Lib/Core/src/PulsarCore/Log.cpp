@@ -3,7 +3,7 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 
 namespace Pulsar {
-    Result<bool, std::string> Log::Init() {
+    Result<bool, std::string> Log::init() {
         s_Logger = spdlog::stdout_color_mt("Pulsar");
         s_Logger->set_level(spdlog::level::trace);
         s_Logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
@@ -15,7 +15,7 @@ namespace Pulsar {
         return Result<bool, std::string>(true);
     }
 
-    void Log::Shutdown() {
+    void Log::shutdown() {
         s_Logger = nullptr;
         spdlog::shutdown();
     }

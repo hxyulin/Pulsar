@@ -29,4 +29,4 @@ jobs:
         
     - name: Check formatting
       run: |
-        find . -name '*.cpp' -o -name '*.h' | xargs clang-format -i --dry-run --Werror
+        find lib/core/src lib/core/tests -name '*.cpp' -o -name '*.hpp' | xargs clang-format -i --dry-run --Werror

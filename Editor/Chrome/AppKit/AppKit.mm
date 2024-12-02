@@ -9,7 +9,7 @@
 @implementation AppDelegate
 
 - (void)applicationDidFinishLaunching:(NSNotification*)notification {
-    auto result = Pulsar::Log::Init();
+    auto result = Pulsar::Log::init();
     if (!result.has_value()) {
         fmt::println("Failed to create logger: {}", result.error());
     }
