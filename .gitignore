@@ -1,11 +1,9 @@
 # Artifacts
 /build/
 /.cache/
+/compile_commands.json
 
 # Dependencies
 /dependencies/*
 !/dependencies/vcpkg.json
 !/dependencies/manifest.response
-
-# Temporary
-/Testing/Temporary/*

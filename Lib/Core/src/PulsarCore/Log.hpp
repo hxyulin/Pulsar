@@ -4,9 +4,9 @@
 #include <string>
 
 #define SPDLOG_LOG_LEVEL 0
-#include <spdlog/spdlog.h>
-
 #include "PulsarCore/Result.hpp"
+
+#include <spdlog/spdlog.h>
 
 namespace Pulsar {
     class Log {

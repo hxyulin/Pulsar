@@ -1,4 +1,6 @@
 # Pulsar
+[![CI](https://github.com/hxyulin/Pulsar/actions/workflows/CI.yml/badge.svg)](https://github.com/hxyulin/Pulsar/actions/workflows/CI.yml)
+
 Pulsar is a game engine, currently only supporting Linux and MacOS.
 
 > Note: This project is still in development, and is not yet ready for use.

@@ -48,6 +48,10 @@ elif [[ "${SUBCOMMAND}" == "run" ]]; then
 elif [[ "${SUBCOMMAND}" == "dry-run" ]]; then
     echo "Finished!"
     exit 0
+elif [[ "${SUBCOMMAND}" == "test" ]]; then
+    cd build
+    ctest ${@:2} && true
+    cd ..
 else
     echo "Unknown subcommand ${SUBCOMMAND}"
     exit 1
