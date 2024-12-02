@@ -12,7 +12,7 @@ set -e
 set -u
 
 # run also invokes the build system, default is 'run', if no subcommand is specified
-SUBCOMMAND=${1:-run}
+SUBCOMMAND=${1:-configure_run}
 BUILD_DIR="build"
 
 # We ensure that the user has cmake installed, and that we have a C++ compiler
@@ -33,7 +33,12 @@ if [[ ! -d "dependencies/vcpkg" ]]; then
     cd ../../
 fi
 
-if [[ "${SUBCOMMAND}" == "build" ]]; then
+if [[ "${SUBCOMMAND}" == "configure_run" ]]; then
+    cmake -B "${BUILD_DIR}" ${@:2}
+    cmake --build "${BUILD_DIR}"
+elif [[ "${SUBCOMMAND}" == "configure" ]]; then
+    cmake -B "${BUILD_DIR}" ${@:2}
+elif [[ "${SUBCOMMAND}" == "build" ]]; then
     cmake --build  "${BUILD_DIR}" ${@:2}
 elif [[ "${SUBCOMMAND}" == "clean" ]]; then
     rm -rf  "${BUILD_DIR}"

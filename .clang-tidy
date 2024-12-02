@@ -8,6 +8,7 @@ Checks: >
   -cppcoreguidelines-avoid-magic-numbers,
   -readability-magic-numbers,
   -google-build-using-namespace,
+  -google-readability-todo,
 
 CheckOptions:
   readability-identifier-length.MinimumVariableNameLength: 3
@@ -15,6 +16,8 @@ CheckOptions:
   readability-identifier-naming.ClassMemberPrefix: m_
   readability-identifier-naming.ClassMemberCase: CamelCase
   readability-identifier-naming.StaticMemberPrefix: s_
+  readability-identifier-naming.StaticMemberCase: CamelCase
+  readability-identifier-naming.GlobalConstantPrefix: g_
   readability-identifier-naming.GlobalConstantCase: CamelCase
   readability-identifier-naming.StructCase: CamelCase
   readability-identifier-naming.EnumCase: CamelCase

@@ -6,6 +6,7 @@
             "name": "gtest",
             "default-features": true
         },
-        "fmt"
+        "fmt",
+        "spdlog"
     ]
 }
