@@ -1,0 +1,11 @@
+# Artifacts
+/build/
+/.cache/
+
+# Dependencies
+/dependencies/*
+!/dependencies/vcpkg.json
+!/dependencies/manifest.response
+
+# Temporary
+/Testing/Temporary/*

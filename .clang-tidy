@@ -1,0 +1,31 @@
+Checks: >
+  *,
+  -llvmlibc-*,
+  -fuchsia-*,
+
+  -llvm-include-order,
+  -modernize-use-trailing-return-type,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -readability-magic-numbers,
+  -google-build-using-namespace,
+
+CheckOptions:
+  readability-identifier-length.MinimumVariableNameLength: 3
+  readability-identifier-length.MinimumParameterNameLength: 1
+  readability-identifier-naming.ClassMemberPrefix: m_
+  readability-identifier-naming.ClassMemberCase: CamelCase
+  readability-identifier-naming.StaticMemberPrefix: s_
+  readability-identifier-naming.GlobalConstantCase: CamelCase
+  readability-identifier-naming.StructCase: CamelCase
+  readability-identifier-naming.EnumCase: CamelCase
+  readability-identifier-naming.ClassCase: CamelCase
+  readability-identifier-naming.StructSuffix: _t
+  readability-identifier-naming.FunctionCase: lower_case
+  readability-identifier-naming.MethodCase: lower_case
+  readability-identifier-naming.MacroCase: UPPER_CASE
+  readability-identifier-naming.VariableCase: camelBack
+  readability-identifier-naming.ParameterCase: camelBack
+
+WarningsAsErrors: '*'
+HeaderFilterRegex: '*.hpp'
+FormatStyle: file

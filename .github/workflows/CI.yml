@@ -1,0 +1,35 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    container: silkeh/clang:19
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install build dependencies
+      run: |
+        apt-get update
+        apt-get install -y cmake make ninja-build git curl zip unzip tar
+
+    - name: Initialize
+      run: |
+        chmod +x ./Meta/Pulsar.sh
+        ./Meta/Pulsar.sh dry-run
+        
+    - name: Configure CMake
+      run: cmake -B build -DCMAKE_CXX_COMPILER=clang++-19 -GNinja
+        
+    - name: Build
+      run: cmake --build build
+      
+    - name: Test
+      run: |
+        cd build
+        ctest --output-on-failure
+        
+    - name: Check formatting
+      run: |
+        find . -name '*.cpp' -o -name '*.h' | xargs clang-format -i --dry-run --Werror

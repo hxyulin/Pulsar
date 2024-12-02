@@ -1,0 +1,11 @@
+{
+    "name": "pulsar",
+    "version": "0.0.1",
+    "dependencies": [
+        {
+            "name": "gtest",
+            "default-features": true
+        },
+        "fmt"
+    ]
+}
