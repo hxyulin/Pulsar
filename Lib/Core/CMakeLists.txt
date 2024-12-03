@@ -21,6 +21,8 @@ if (PULSAR_BUILD_TESTS)
     )
     file(GLOB_RECURSE PULSAR_LIB_CORE_TEST_FILES tests/PulsarCore/*.hpp tests/PulsarCore/*.cpp)
 
+    # Explicitly disable clang-tidy for tests
+    add_clang_tidy(PulsarLibCore_Tests OFF)
     # We don't want to include clang-tidy in the tests, due to many false positives and redundant checks
     add_clang_format(PulsarLibCore_Tests ${PULSAR_LIB_CORE_TEST_FILES})
 

@@ -1,31 +1,34 @@
+// NOLINTBEGIN(*)
+#include "PulsarCore/Types.hpp"
+
 #include <PulsarCore/GC/Pointer.hpp>
 #include <atomic>
 #include <gtest/gtest.h>
 #include <thread>
 
+using Pulsar::usize, Pulsar::i32;
 
 class TrackingAllocatorInner {
 public:
     TrackingAllocatorInner() = default;
 
-    template<typename T> [[nodiscard]] T* allocate(std::size_t n) {
+    template<typename T> [[nodiscard]] T* allocate(usize n) {
         std::lock_guard<std::mutex> lock(s_Mutex);
         T*                          ptr = std::allocator<T>().allocate(n);
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         s_Allocations[ptr] = n;
-
-        //std::cerr << "allocating " << ptr << "\n";
+        std::cerr << "allocating " << ptr << "\n";
         return ptr;
     }
 
-    template<typename T> void deallocate(T* p, std::size_t n) {
+    template<typename T> void deallocate(T* p, usize n) {
         std::lock_guard<std::mutex> lock(s_Mutex);
-        auto                        iter = s_Allocations.find(p);
+        std::cerr << "deallocating " << p << "\n";
+        auto iter = s_Allocations.find(p);
         EXPECT_TRUE(iter != s_Allocations.end()) << "Trying to deallocate untracked memory";
         EXPECT_EQ(iter->second, n) << "Deallocation size mismatch";
         s_Allocations.erase(iter);
         std::allocator<T>().deallocate(p, n);
-        //std::cerr << "deallocating " << p << "\n";
     }
 
     static void assert_no_leaks() {
@@ -40,26 +43,35 @@ public:
     }
 
 private:
-    static inline std::mutex                                   s_Mutex;
-    static inline std::unordered_map<const void*, std::size_t> s_Allocations;
+    static inline std::mutex                             s_Mutex;
+    static inline std::unordered_map<const void*, usize> s_Allocations;
 };
+
+// NOLINTNEXTLINE(misc-use-anonymous-namespace, cppcoreguidelines-avoid-non-const-global-variables)
+static TrackingAllocatorInner g_TrackingAllocatorInner;
 
 template<typename T> class TrackingAllocator {
 public:
     using value_type                             = T;
-    using size_type                              = std::size_t;
+    using size_type                              = usize;
     using difference_type                        = std::ptrdiff_t;
     using propagate_on_container_move_assignment = std::true_type;
 
-    [[nodiscard]] T* allocate(std::size_t n) {
-        return s_Inner.allocate<T>(n);
+    TrackingAllocator() = default;
+
+    // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions, readability-named-parameter, hicpp-named-parameter)
+    template<typename U> TrackingAllocator(const TrackingAllocator<U>&) {
     }
 
-    void deallocate(T* p, std::size_t n) {
+    [[nodiscard]] T* allocate(usize n) {
+        return g_TrackingAllocatorInner.allocate<T>(n);
+    }
+
+    void deallocate(T* p, usize n) {
         if (p == nullptr) {
             return;
         }
-        s_Inner.deallocate(p, n);
+        g_TrackingAllocatorInner.deallocate(p, n);
     }
 
     template<typename U, typename... Args> void construct(U* p, Args&&... args) {
@@ -75,9 +87,6 @@ public:
     struct rebind {
         using other = TrackingAllocator<U>;
     };
-
-private:
-    inline static TrackingAllocatorInner s_Inner;
 };
 
 // NOLINTNEXTLINE(misc-use-anonymous-namespace)
@@ -94,24 +103,18 @@ namespace Test::GC {
 
     template<typename T> using Ref = Pulsar::GC::Ref<T, TrackingAllocator<T>>;
 
-    // NOLINTNEXTLINE(misc-use-anonymous-namespace)
-    template<typename T, typename... Args> static Scoped<T> make_scoped(Args&&... args) {
-        TrackingAllocator<T> alloc;
-        T*                   ptr = alloc.allocate(1);
-        alloc.construct(ptr, std::forward<Args>(args)...);
-        return Scoped<T>(ptr, alloc);
-    }
+    template<typename T> using Weak = Pulsar::GC::Weak<T, TrackingAllocator<T>>;
 } // namespace Test::GC
 using namespace Test;
 
 class TestClass {
 public:
-    static int s_InstanceCount;
+    static i32 s_InstanceCount;
 
     TestClass() {
         s_InstanceCount++;
     }
-    explicit TestClass(int i) : m_I(i) {
+    explicit TestClass(i32 i) : m_I(i) {
         s_InstanceCount++;
     }
     ~TestClass() {
@@ -122,11 +125,11 @@ public:
     TestClass(TestClass&&)                 = delete;
     TestClass& operator=(TestClass&&)      = delete;
 
-    [[nodiscard]] int get() const {
+    [[nodiscard]] i32 get() const {
         return m_I.load(std::memory_order_relaxed);
     }
 
-    void set(int i) {
+    void set(i32 i) {
         m_I.store(i, std::memory_order_relaxed);
     }
 
@@ -135,7 +138,7 @@ public:
     }
 
 private:
-    std::atomic<int> m_I {0};
+    std::atomic<i32> m_I {0};
 };
 
 
@@ -143,28 +146,28 @@ int TestClass::s_InstanceCount = 0;
 
 // Existing Scoped tests plus additional edge cases
 TEST(Pointer, Scoped) {
-        // Basic functionality
-    GC::Scoped<int> scoped(allocate<int>(5));
+    // Basic functionality
+    GC::Scoped<i32> scoped(allocate<i32>(5));
     EXPECT_EQ(*scoped, 5);
 
-        // Custom class
+    // Custom class
     GC::Scoped<TestClass> testClassScoped(allocate<TestClass>(5));
     EXPECT_EQ(testClassScoped->get(), 5);
 
-        // Reset to nullptr
+    // Reset to nullptr
     scoped.reset();
     EXPECT_EQ(scoped.get(), nullptr);
     testClassScoped.reset();
     EXPECT_EQ(testClassScoped.get(), nullptr);
 
-        // Move constructor
+    // Move constructor
     GC::Scoped<TestClass> original(allocate<TestClass>(10));
     GC::Scoped<TestClass> moved(std::move(original));
     EXPECT_EQ(moved->get(), 10);
     EXPECT_EQ(original.get(), nullptr);
     moved.reset();
 
-        // Swap
+    // Swap
     GC::Scoped<TestClass> ptrA(allocate<TestClass>(1));
     GC::Scoped<TestClass> ptrB(allocate<TestClass>(2));
     ptrA.swap(ptrB);
@@ -202,7 +205,7 @@ TEST(Pointer, Ref) {
         GC::Ref<TestClass> copy(ref);
         EXPECT_EQ(copy->get(), 5);
         copy->set(10);
-        EXPECT_EQ(ref->get(), 10);  // Should affect both references
+        EXPECT_EQ(ref->get(), 10); // Should affect both references
 
         // Move constructor
         GC::Ref<TestClass> moved(std::move(copy));
@@ -226,38 +229,11 @@ TEST(Pointer, Ref) {
     TrackingAllocatorInner::assert_no_leaks();
 }
 
-// We need to implement the test once we implement weak_pointers
-/*TEST(Pointer, RefCircularDependency) {*/
-/*    {*/
-/*        struct alignas(32) Node_t {*/
-/*            GC::Ref<Node_t> m_next;*/
-/*            explicit Node_t(int v) : m_value(v) {*/
-/*            }*/
-/*            int m_value;*/
-/*        };*/
-/**/
-/*        TestClass::s_InstanceCount = 0;*/
-/*        {*/
-/*            // Create circular reference*/
-/*            GC::Ref<Node_t> node1(allocate<Node_t>(1));*/
-/*            GC::Ref<Node_t> node2(allocate<Node_t>(2));*/
-/*            node1->m_next = node2;*/
-/*            node2->m_next = node1;*/
-/**/
-/*            // Verify circular reference*/
-/*            EXPECT_EQ(node1->m_next->m_value, 2);*/
-/*            EXPECT_EQ(node2->m_next->m_value, 1);*/
-/*        }*/
-/*        // Objects should be cleaned up despite circular reference*/
-/*    }*/
-/**/
-/*    TrackingAllocatorInner::assert_no_leaks();*/
-/*}*/
 
 TEST(Pointer, RefThreadSafety) {
     {
-        const int numThreads    = 4;
-        const int numIterations = 1000;
+        const i32 numThreads    = 4;
+        const i32 numIterations = 1000;
 
         GC::Ref<TestClass>       shared(allocate<TestClass>(0));
         std::vector<std::thread> threads;
@@ -266,7 +242,7 @@ TEST(Pointer, RefThreadSafety) {
         for (int i = 0; i < numThreads; ++i) {
             threads.emplace_back([&shared]() {
                 for (int j = 0; j < numIterations; ++j) {
-                    GC::Ref<TestClass> local = shared;  // Copy constructor
+                    GC::Ref<TestClass> local = shared; // Copy constructor
                     local->increment();
                 }
             });
@@ -284,7 +260,7 @@ TEST(Pointer, RefThreadSafety) {
 
 TEST(Pointer, RefEdgeCases) {
     {
-    // Self-assignment
+        // Self-assignment
         GC::Ref<TestClass> self(allocate<TestClass>(1));
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wself-assign-overloaded"
@@ -292,7 +268,7 @@ TEST(Pointer, RefEdgeCases) {
 #pragma clang diagnostic pop
         EXPECT_EQ(self->get(), 1);
 
-    // Chain of moves
+        // Chain of moves
         GC::Ref<TestClass> ptrA(allocate<TestClass>(1));
         GC::Ref<TestClass> ptrB(std::move(ptrA));
         GC::Ref<TestClass> ptrC(std::move(ptrB));
@@ -300,7 +276,7 @@ TEST(Pointer, RefEdgeCases) {
         EXPECT_EQ(ptrA.get(), nullptr);
         EXPECT_EQ(ptrB.get(), nullptr);
 
-    // nullptr assignment
+        // nullptr assignment
         GC::Ref<TestClass> notNull(allocate<TestClass>(1));
         notNull = nullptr;
         EXPECT_EQ(notNull.get(), nullptr);
@@ -321,3 +297,304 @@ TEST(Pointer, RefMemoryLeaks) {
 
     TrackingAllocatorInner::assert_no_leaks();
 }
+
+TEST(Pointer, WeakBasics) {
+    TestClass::s_InstanceCount = 0;
+    {
+        // Basic weak pointer creation
+        GC::Ref<TestClass>  ref(allocate<TestClass>(5));
+        GC::Weak<TestClass> weak(ref);
+
+        EXPECT_TRUE(weak.is_valid());
+
+        // Test promotion to strong reference
+        if (auto promoted = weak.lock()) {
+            EXPECT_EQ(promoted.value()->get(), 5);
+        }
+        else {
+            FAIL() << "Failed to lock valid weak pointer";
+        }
+    }
+    // After ref is destroyed, weak should be invalid
+    EXPECT_EQ(TestClass::s_InstanceCount, 0);
+
+    TrackingAllocatorInner::assert_no_leaks();
+}
+
+TEST(Pointer, WeakCopyAndMove) {
+    {
+        GC::Ref<TestClass>  ref(allocate<TestClass>(1));
+        GC::Weak<TestClass> weak1(ref);
+
+        // Copy constructor
+        GC::Weak<TestClass> weak2(weak1);
+        EXPECT_TRUE(weak2.is_valid());
+
+        // Move constructor
+        GC::Weak<TestClass> weak3(std::move(weak1));
+        EXPECT_TRUE(weak3.is_valid());
+
+        // Copy assignment
+        GC::Weak<TestClass> weak4(ref);
+        weak4 = weak2;
+        EXPECT_TRUE(weak4.is_valid());
+
+        // Move assignment
+        GC::Weak<TestClass> weak5(ref);
+        weak5 = std::move(weak3);
+        EXPECT_TRUE(weak5.is_valid());
+
+        // Test that moving invalidates the source
+        if (auto promoted = weak1.lock()) {
+            FAIL() << "Moved-from weak pointer should not be promoteable";
+        }
+    }
+
+    TrackingAllocatorInner::assert_no_leaks();
+}
+
+TEST(Pointer, WeakExpiration) {
+    GC::Weak<TestClass> weak;
+    {
+        GC::Ref<TestClass> ref(allocate<TestClass>(1));
+        weak = GC::Weak<TestClass>(ref);
+        EXPECT_TRUE(weak.is_valid());
+
+        // Ref count should prevent destruction
+        if (auto promoted = weak.lock()) {
+            EXPECT_EQ(promoted.value()->get(), 1);
+        }
+        else {
+            FAIL() << "Failed to promote valid weak pointer";
+        }
+    }
+    EXPECT_FALSE(weak.is_valid());
+    weak.reset();
+
+    TrackingAllocatorInner::assert_no_leaks();
+}
+
+TEST(Pointer, WeakThreadSafety) {
+    const int numThreads    = 4;
+    const int numIterations = 1000;
+
+    GC::Ref<TestClass>       ref(allocate<TestClass>(0));
+    GC::Weak<TestClass>      weak(ref);
+    std::vector<std::thread> threads;
+
+    // Test concurrent weak pointer operations
+    threads.reserve(numThreads);
+    for (int i = 0; i < numThreads; ++i) {
+        threads.emplace_back([&weak]() {
+            for (int j = 0; j < numIterations; ++j) {
+                if (auto promoted = weak.lock()) {
+                    promoted.value()->increment();
+                }
+            }
+        });
+    }
+
+    for (auto& thread : threads) {
+        thread.join();
+    }
+
+    EXPECT_TRUE(weak.is_valid());
+    if (auto final = weak.lock()) {
+        EXPECT_EQ(final.value()->get(), numThreads * numIterations);
+    }
+    weak.reset();
+    ref.reset();
+
+    TrackingAllocatorInner::assert_no_leaks();
+}
+
+TEST(Pointer, WeakCircularDependency) {
+    struct Node_t {
+        GC::Ref<Node_t>  m_next_strong;
+        GC::Weak<Node_t> m_next_weak;
+        explicit Node_t(int v) : m_value(v) {
+        }
+        int m_value;
+    };
+
+    {
+        // Create circular reference with one weak pointer to break cycle
+        GC::Ref<Node_t> node1(allocate<Node_t>(1));
+        GC::Ref<Node_t> node2(allocate<Node_t>(2));
+
+        node1->m_next_strong = node2;
+        node2->m_next_weak   = GC::Weak<Node_t>(node1);
+
+        // Verify circular reference
+        EXPECT_EQ(node1->m_next_strong->m_value, 2);
+        if (auto promoted = node2->m_next_weak.lock()) {
+            EXPECT_EQ(promoted.value()->m_value, 1);
+        }
+        else {
+            FAIL() << "Failed to promote valid weak pointer";
+        }
+    }
+
+    TrackingAllocatorInner::assert_no_leaks();
+}
+
+TEST(Pointer, RefStressTest) {
+    constexpr int NUM_THREADS    = 8;
+    constexpr int NUM_ITERATIONS = 10000;
+
+    GC::Ref<TestClass>       ref(allocate<TestClass>(0));
+    std::vector<std::thread> threads;
+
+    // Multiple threads creating and destroying references
+    threads.reserve(NUM_THREADS);
+    for (int i = 0; i < NUM_THREADS; ++i) {
+        threads.emplace_back([&ref]() {
+            for (int j = 0; j < NUM_ITERATIONS; ++j) {
+                GC::Ref<TestClass> localRef   = ref; // Create reference
+                GC::Ref<TestClass> anotherRef = localRef; // Create another reference
+                localRef.reset(); // Destroy one reference
+            }
+        });
+    }
+
+    for (auto& thread : threads) {
+        thread.join();
+    }
+
+    EXPECT_EQ(ref.strong_ref_count(), 1); // Only original reference should remain
+    ref.reset();
+    TrackingAllocatorInner::assert_no_leaks();
+}
+
+TEST(Pointer, WeakPromotionRace) {
+    constexpr int NUM_THREADS    = 8;
+    constexpr int NUM_ITERATIONS = 1000;
+
+    GC::Weak<TestClass> weak;
+    {
+        GC::Ref<TestClass> ref(allocate<TestClass>(0));
+        weak = GC::Weak<TestClass>(ref);
+
+        std::vector<std::thread> threads;
+        threads.reserve(NUM_THREADS);
+
+        // Have multiple threads try to promote the weak reference while
+        // the original reference still exists
+        for (int i = 0; i < NUM_THREADS; ++i) {
+            threads.emplace_back([&weak]() {
+                for (int j = 0; j < NUM_ITERATIONS; ++j) {
+                    if (auto promoted = weak.lock()) {
+                        promoted.value()->increment();
+                    }
+                }
+            });
+        }
+
+        for (auto& thread : threads) {
+            thread.join();
+        }
+
+        EXPECT_TRUE(weak.is_valid());
+        if (auto final = weak.lock()) {
+            EXPECT_EQ(final.value()->get(), NUM_THREADS * NUM_ITERATIONS);
+        }
+    }
+    // ref is now destroyed
+    EXPECT_FALSE(weak.is_valid());
+    weak.reset();
+
+    TrackingAllocatorInner::assert_no_leaks();
+}
+
+TEST(Pointer, WeakDestroyWhileLocking) {
+    constexpr int NUMBER_OF_ITERATIONS = 1000;
+
+    for (int i = 0; i < NUMBER_OF_ITERATIONS; ++i) {
+        GC::Weak<TestClass> weak;
+        {
+            GC::Ref<TestClass> ref(allocate<TestClass>(0));
+            weak = GC::Weak<TestClass>(ref);
+
+            std::atomic<bool> keepRunning {true};
+
+            // Have locker check keepRunning flag
+            std::thread locker([&weak, &keepRunning]() {
+                while (keepRunning) {
+                    if (auto promoted = weak.lock()) {
+                        promoted.value()->increment();
+                    }
+                }
+            });
+
+            // Give locker thread time to run
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+            // Signal locker to stop before destroying reference
+            keepRunning = false;
+            locker.join();
+        } // ref destroyed here after locker is done
+
+        EXPECT_FALSE(weak.is_valid());
+        weak.reset();
+    }
+
+    TrackingAllocatorInner::assert_no_leaks();
+}
+
+TEST(Pointer, RefCopyMoveStress) {
+    constexpr int NUMBER_OF_ITERATIONS = 10000;
+
+    TestClass::s_InstanceCount = 0;
+    {
+        GC::Ref<TestClass> original(allocate<TestClass>(1));
+
+        // Use fixed array instead of vector to avoid reallocation issues
+        GC::Ref<TestClass> temp1(nullptr);
+        GC::Ref<TestClass> temp2(nullptr);
+
+        for (int i = 0; i < NUMBER_OF_ITERATIONS; ++i) {
+            temp1 = original; // Copy
+            temp2 = std::move(temp1); // Move
+            EXPECT_EQ(temp2->get(), 1);
+            temp2.reset(); // Clean up
+        }
+
+        EXPECT_EQ(original.strong_ref_count(), 1);
+        EXPECT_EQ(original->get(), 1);
+    }
+    EXPECT_EQ(TestClass::s_InstanceCount, 0);
+    TrackingAllocatorInner::assert_no_leaks();
+}
+
+TEST(Pointer, WeakCopyMoveStress) {
+    constexpr int NUM_ITERATIONS = 10000;
+
+    GC::Ref<TestClass>               ref(allocate<TestClass>(1));
+    std::vector<GC::Weak<TestClass>> weaks;
+
+    // Test rapid weak pointer copy/move operations
+    for (int i = 0; i < NUM_ITERATIONS; ++i) {
+        GC::Weak<TestClass> weak(ref);
+        weaks.push_back(weak); // Copy
+        weaks.push_back(std::move(weak)); // Move
+
+        // Verify that moved-from weak pointer is invalid
+        EXPECT_FALSE(weak.is_valid());
+
+        // Verify that copies are valid
+        EXPECT_TRUE(weaks.back().is_valid());
+        if (auto promoted = weaks.back().lock()) {
+            EXPECT_EQ(promoted.value()->get(), 1);
+        }
+
+        weaks.clear(); // Destroy all weak pointers
+    }
+
+    EXPECT_EQ(ref.strong_ref_count(), 1);
+    EXPECT_EQ(ref.weak_ref_count(), 0);
+
+    ref.reset();
+    weaks.clear();
+    TrackingAllocatorInner::assert_no_leaks();
+}
+// NOLINTEND(*)
