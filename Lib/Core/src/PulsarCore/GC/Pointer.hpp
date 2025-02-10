@@ -385,4 +385,29 @@ namespace Pulsar::GC {
         AllocatorTraits::construct(alloc, ptr, std::forward<Args>(args)...);
         return Scoped<T, Allocator>(ptr, alloc);
     }
+
+    template<typename T, typename Allocator = DefaultAllocator<T>, typename... Args>
+    Scoped<T, Allocator> make_scoped_with_allocator(Allocator alloc, Args&&... args) {
+        using AllocatorTraits = std::allocator_traits<Allocator>;
+        auto* ptr             = AllocatorTraits::allocate(alloc, 1);
+        AllocatorTraits::construct(alloc, ptr, std::forward<Args>(args)...);
+        return Scoped<T, Allocator>(ptr, alloc);
+    }
+
+    template<typename T, typename Allocator = DefaultAllocator<T>, typename... Args>
+    Ref<T, Allocator> make_ref(Args&&... args) {
+        using AllocatorTraits = std::allocator_traits<Allocator>;
+        Allocator alloc;
+        auto*     ptr = AllocatorTraits::allocate(alloc, 1);
+        AllocatorTraits::construct(alloc, ptr, std::forward<Args>(args)...);
+        return Ref<T, Allocator>(ptr, alloc);
+    }
+
+    template<typename T, typename Allocator = DefaultAllocator<T>, typename... Args>
+    Ref<T, Allocator> make_ref_with_allocator(Allocator alloc, Args&&... args) {
+        using AllocatorTraits = std::allocator_traits<Allocator>;
+        auto* ptr             = AllocatorTraits::allocate(alloc, 1);
+        AllocatorTraits::construct(alloc, ptr, std::forward<Args>(args)...);
+        return Ref<T, Allocator>(ptr, alloc);
+    }
 } // namespace Pulsar::GC

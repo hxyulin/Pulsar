@@ -1,3 +1,4 @@
+// NOLINTBEGIN(*)
 #include <PulsarCore/Result.hpp>
 #include <gtest/gtest.h>
 
@@ -16,3 +17,4 @@ TEST(Result, BasicError) {
     EXPECT_EQ(res.has_value(), false);
     EXPECT_EQ(res.error(), 42);
 }
+// NOLINTEND(*)

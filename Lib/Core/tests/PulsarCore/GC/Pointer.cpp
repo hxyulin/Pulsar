@@ -17,13 +17,13 @@ public:
         T*                          ptr = std::allocator<T>().allocate(n);
         // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
         s_Allocations[ptr] = n;
-        std::cerr << "allocating " << ptr << "\n";
+        //std::cerr << "allocating " << ptr << "\n";
         return ptr;
     }
 
     template<typename T> void deallocate(T* p, usize n) {
         std::lock_guard<std::mutex> lock(s_Mutex);
-        std::cerr << "deallocating " << p << "\n";
+        //std::cerr << "deallocating " << p << "\n";
         auto iter = s_Allocations.find(p);
         EXPECT_TRUE(iter != s_Allocations.end()) << "Trying to deallocate untracked memory";
         EXPECT_EQ(iter->second, n) << "Deallocation size mismatch";

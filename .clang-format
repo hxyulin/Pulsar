@@ -1,12 +1,9 @@
 AccessModifierOffset: -4
 AlignAfterOpenBracket: DontAlign
 AlignArrayOfStructures: Left
-AlignConsecutiveAssignments:
-  Enabled: true
-AlignConsecutiveBitFields:
-  Enabled: true
-AlignConsecutiveDeclarations:
-  Enabled: true
+AlignConsecutiveAssignments: Consecutive
+AlignConsecutiveBitFields: Consecutive
+AlignConsecutiveDeclarations: Consecutive
 AlignConsecutiveMacros: None
 AlignConsecutiveShortCaseStatements:
   Enabled: true
@@ -26,7 +23,7 @@ AllowShortLambdasOnASingleLine: Empty
 AllowShortLoopsOnASingleLine: false
 AlwaysBreakAfterReturnType: None
 AlwaysBreakBeforeMultilineStrings: false
-AttributeMacros: [__attribute__]
+AttributeMacros: []
 BinPackArguments: true
 BinPackParameters: true
 BitFieldColonSpacing: Both

@@ -20,6 +20,7 @@ set(VCPKG_INSTALL_OPTIONS "--clean-after-build")
 set(VCPKG_BINARY_SOURCES "clear;default,readwrite")
 set(VCPKG_MANIFEST_MODE ON)
 set(VCPKG_MANIFEST_QUIET ON)
+set(VCPKG_MANIFEST_NO_DEFAULT_FEATURES ON)
 
 project(
     Pulsar
@@ -34,17 +35,23 @@ endif()
 # Although not fully supported, we can use C++23 features, like std::expected
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -Werror")
 
 set(PULSAR_BUILD_TESTS ON CACHE BOOL "Build tests")
 set(PULSAR_CLANG_TIDY ON CACHE BOOL "Run clang-tidy")
 set(PULSAR_CLANG_FORMAT ON CACHE BOOL "Run clang-format")
+set(PULSAR_BUILD_BENCHMARKS ON CACHE BOOL "Build benchmark")
 
 if (PULSAR_BUILD_TESTS)
     enable_testing()
     find_package(GTest REQUIRED)
     include(GoogleTest)
+endif()
+
+if (PULSAR_BUILD_BENCHMARKS)
+    find_package(benchmark REQUIRED)
 endif()
 
 if (PULSAR_CLANG_TIDY)
@@ -94,9 +101,10 @@ function(add_clang_format target)
 endfunction()
 
 # Set output directories
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/artifacts/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/artifacts/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/artifacts/bin)
 
 add_subdirectory(Lib)
+add_subdirectory(Engine)
 add_subdirectory(Editor)

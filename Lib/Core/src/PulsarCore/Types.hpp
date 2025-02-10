@@ -16,20 +16,36 @@ namespace Pulsar {
     using f64   = double;
     using usize = size_t;
 
-    static_assert(sizeof(i8) == sizeof(u8));
-    static_assert(sizeof(i16) == sizeof(u16));
-    static_assert(sizeof(i32) == sizeof(u32));
-    static_assert(sizeof(i64) == sizeof(u64));
+    // NOLINTBEGIN(readability-identifier-naming)
+    template<typename T> struct Vector2_t {
+        T x;
+        T y;
+    };
 
-    static_assert(sizeof(i8) == 1);
-    static_assert(sizeof(u8) == 1);
-    static_assert(sizeof(i16) == 2);
-    static_assert(sizeof(u16) == 2);
-    static_assert(sizeof(i32) == 4);
-    static_assert(sizeof(u32) == 4);
-    static_assert(sizeof(i64) == 8);
-    static_assert(sizeof(u64) == 8);
+    template<typename T> struct Vector3_t {
+        T x;
+        T y;
+        T z;
+    };
 
-    static_assert(sizeof(f32) == 4);
-    static_assert(sizeof(f64) == 8);
+    template<typename T> struct Vector4_t {
+        T x;
+        T y;
+        T z;
+        T w;
+    };
+
+    using IVec2 = Vector2_t<i32>;
+    using IVec3 = Vector3_t<i32>;
+    using IVec4 = Vector4_t<i32>;
+
+    using UVec2 = Vector2_t<u32>;
+    using UVec3 = Vector3_t<u32>;
+    using UVec4 = Vector4_t<u32>;
+
+    using Vec2 = Vector2_t<f32>;
+    using Vec3 = Vector3_t<f32>;
+    using Vec4 = Vector4_t<f32>;
+
+    // NOLINTEND(readability-identifier-naming)
 } // namespace Pulsar

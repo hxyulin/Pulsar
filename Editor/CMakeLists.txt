@@ -4,6 +4,6 @@ add_executable(PulsarEditor
 
 target_link_libraries(PulsarEditor
     PRIVATE
-        Pulsar::LibCore
+        Pulsar::Engine
 )
 
